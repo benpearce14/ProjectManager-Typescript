@@ -39,15 +39,15 @@ class ProjectState extends State {
         this.instance = new ProjectState();
         return this.instance;
     }
-    addProject(title, description, numPeople) {
-        const newProject = new Project(Math.random().toString(), title, description, numPeople, ProjectStatus.Active);
+    addProject(title, description, numOfPeople) {
+        const newProject = new Project(Math.random().toString(), title, description, numOfPeople, ProjectStatus.Active);
         this.projects.push(newProject);
         for (const listenerFn of this.listeners) {
             listenerFn(this.projects.slice());
         }
     }
 }
-const projectState = new ProjectState();
+const projectState = ProjectState.getInstance();
 function validate(validatableInput) {
     let isValid = true;
     if (validatableInput.required) {
@@ -95,14 +95,16 @@ class Component {
         }
         this.attach(insertAtStart);
     }
-    attach(insertAtStart) {
-        this.hostElement.insertAdjacentElement(insertAtStart ? "afterbegin" : "beforeend", this.element);
+    attach(insertAtBeginning) {
+        this.hostElement.insertAdjacentElement(insertAtBeginning ? "afterbegin" : "beforeend", this.element);
     }
 }
 class ProjectItem extends Component {
     constructor(hostId, project) {
         super("single-project", hostId, false, project.id);
         this.project = project;
+        this.configure();
+        this.renderContent();
     }
     configure() { }
     renderContent() {
@@ -122,15 +124,13 @@ class ProjectList extends Component {
     }
     configure() {
         projectState.addListener((projects) => {
-            const filteredProjects = projects.filter((prj) => {
+            const relevantProjects = projects.filter((prj) => {
                 if (this.type === "active") {
                     return prj.status === ProjectStatus.Active;
                 }
-                else {
-                    return prj.status === ProjectStatus.Finished;
-                }
+                return prj.status === ProjectStatus.Finished;
             });
-            this.assignedProjects = filteredProjects;
+            this.assignedProjects = relevantProjects;
             this.renderProjects();
         });
     }
@@ -182,7 +182,7 @@ class ProjectInput extends Component {
         if (!validate(titleValidatable) ||
             !validate(descriptionValidatable) ||
             !validate(peopleValidatable)) {
-            alert("Invalid Input - Please try again!");
+            alert("Invalid input, please try again!");
             return;
         }
         else {
@@ -198,8 +198,8 @@ class ProjectInput extends Component {
         event.preventDefault();
         const userInput = this.gatherUserInput();
         if (Array.isArray(userInput)) {
-            const [title, description, people] = userInput;
-            projectState.addProject(title, description, people);
+            const [title, desc, people] = userInput;
+            projectState.addProject(title, desc, people);
             this.clearInputs();
         }
     }
